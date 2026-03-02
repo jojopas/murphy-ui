@@ -100,7 +100,7 @@ export function ChannelsTab({ channels, setChannels }: Props) {
                     onChange={e => update(i, 'group', e.target.value)} />
                 </td>
                 <td>
-                  <input value={ch.bus_sends.join(',')} placeholder="bus1,bus2"
+                  <input value={(ch.bus_sends ?? []).join(',')} placeholder="bus1,bus2"
                     onChange={e => update(i, 'bus_sends', e.target.value ? e.target.value.split(',').map(s => s.trim()) : [])} />
                 </td>
                 <td className="center">
