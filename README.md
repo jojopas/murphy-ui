@@ -1,73 +1,113 @@
-# React + TypeScript + Vite
+# Murphy UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web interface for **Murphy** — an AI FOH (Front of House) Engineer that controls a Behringer X32 mixing console via OSC commands.
 
-Currently, two official plugins are available:
+Built iPad-first for use at the mixing console during live shows.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## React Compiler
+- **React 19** + TypeScript
+- **Vite 7** with Tailwind CSS v4
+- **shadcn/ui** (New York style, Radix primitives)
+- **Zustand** for state management
+- **Lucide React** for icons
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # production build to dist/
+npm run preview    # preview production build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+  components/
+    ui/                 # shadcn auto-generated (button, card, input, etc.)
+    layout/
+      app-shell.tsx     # Root layout: top bar + content + bottom tab bar
+      top-bar.tsx       # Logo, connection badge, undo, event log toggle
+      bottom-tab-bar.tsx# 5-tab navigation with Lucide icons
+    shared/
+      connection-badge.tsx  # Green/yellow/red bridge status dot
+      osc-command-block.tsx # OSC commands with X32 validation badges
+      upload-card.tsx       # Dashed-border file upload target
+  features/
+    chat/
+      chat-view.tsx     # Main chat screen (messages, input, mode toggle)
+      chat-message.tsx  # Chat bubble with OSC preview + approve/skip
+      chat-input.tsx    # Message input bar
+    show/
+      show-view.tsx     # Show info form + scene/input-list upload
+    channels/
+      channels-view.tsx # Expandable channel card list + bus section
+      channel-card.tsx  # Single channel: compact & expanded views
+      bus-section.tsx   # Bus list with add/remove
+    settings/
+      settings-view.tsx # Murphy API, X32 Bridge, inference, API key
+    export/
+      export-view.tsx   # Download config.json + push to Murphy API
+    event-log/
+      event-log-sheet.tsx   # Bottom sheet (50% height) with event entries
+      event-log-entry.tsx   # Single log entry (timestamp, severity, message)
+  store/
+    index.ts            # Zustand store (config, chat, bridge, eventLog, oscHistory)
+  lib/
+    utils.ts            # cn() utility (clsx + tailwind-merge)
+    api.ts              # Murphy API client (chat, OSC, upload, status)
+    types.ts            # All TypeScript interfaces and types
+    instrument-map.ts   # Instrument -> color/template/group mapping
+    osc-validation.ts   # Validate OSC paths against X32 namespace
+  App.tsx               # Root component (TooltipProvider + AppShell + EventLogSheet)
+  main.tsx              # Entry point
+  globals.css           # Tailwind base + dark theme CSS variables
+```
+
+## Features
+
+### Chat
+Talk to Murphy about what you're hearing. Murphy responds with OSC commands to adjust the mix. Two modes:
+- **Approve** — review and approve/skip each command before it fires
+- **Auto** — commands fire immediately
+
+### Show Setup
+Configure the show (band name, date, venue, notes) and upload X32 `.scn` scene files or CSV/JSON input lists to populate channels.
+
+### Channels
+Expandable card list for each channel. Compact view shows channel number, name, instrument, and mute status. Expand to edit mic, phantom, gain, group, bus sends. Bus section at the top for managing bus routing.
+
+### Settings
+- **Murphy API** — host and port for the Murphy backend
+- **X32 Bridge** — IP, port, model, protocol, with connection test
+- **Inference Backend** — toggle between Local, Cloud, or Hybrid
+- **API Key** — Anthropic key for cloud/hybrid modes
+
+### Export
+Download the full config as JSON or push it directly to a running Murphy instance.
+
+### Event Log
+Bottom sheet accessible from the top bar. Shows timestamped, color-coded events (info, warn, error, success) as you interact with Murphy.
+
+### Undo
+Undo button in the top bar with confirmation dialog. Pops the last OSC action from history and sends inverse commands when available.
+
+### OSC Validation
+Each OSC command is validated against known X32 path prefixes (`/ch/`, `/bus/`, `/main/`, `/dca/`, etc.) and shown with a green check or red X.
+
+## Design Decisions
+
+- **Dark mode only** — pro-audio aesthetic, always dark at FOH
+- **Bottom tab bar** — iPad at FOH means thumbs near the bottom, follows iOS conventions
+- **Channels as expandable cards** — touch-friendly vs tiny table cells
+- **Buses merged into Channels view** — related editing surfaces
+- **Mixer config merged into Settings** — was an orphaned tab
+- **44px touch targets** on all interactive elements (Apple HIG)
+- **16px font on inputs** to prevent iOS Safari zoom
+- **Safe area padding** for iPad home indicator and notch
+
+## iPad Usage
+
+Add to Home Screen for a full-screen app experience. The viewport is configured with `viewport-fit=cover` and `apple-mobile-web-app-capable` for standalone mode. All touch targets meet the 44px minimum and inputs use 16px font to prevent Safari's auto-zoom.
